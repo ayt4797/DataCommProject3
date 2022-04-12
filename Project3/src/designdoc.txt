@@ -1,0 +1,41 @@
+PUT:
+The file existence is verified, if it doesn't exist skip to the next loop.
+
+The client sends a message contaning ("tput", FILENAME, <SIZE>),
+\\a \n is appended to the filename to act as a sentintal btwn it in and size
+
+The Server moves in to a recv mode, and will read for the number of bytes in <SIZE>
+
+The client sends a file using the sendfile(sockfd, filename) method
+
+The server sends back an acknolwedgment that it wrote the file.
+
+GET:
+
+The client sends a message contaning ("TGET", FILENAME)
+
+The server verfies if the file exists, and sends a response(SIZE).
+
+	if it gets the response and it's negative continue
+else:
+	if it gets a response and it's positive the client will wait on a recv until it gets bytes equal to size,
+		if size ==0 it just writes a file of that name to the drive, b/c there's nothing to send.
+
+Tconnect:
+
+The client sends a connect message out to the server, 
+if it doesn't find anything on the given server and port it errors out and closes the program
+
+Tlist:
+The client sends a message ("tlist")
+
+The server performs an os.list(), stores the results in a variable and sends that over
+
+if there was a failure it sends back negative value, and the client prints an error.
+
+Tchdir
+The client sends a message ("Tchdir")
+
+The server performs an os.chdr(), sends a message ack that the action has been performed
+
+if there was a failure it sends back negative value, and the client prints an error.
