@@ -6,13 +6,19 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/select.h>
+#include <sys/types.h>
 
 #include "../../include/processing.h"
+#include "../../include/utility.h"
 
 /*
  * Add any socket variables and other variables you deem necessary
  */
-
+fd_set rfds;
+int p[2];
+int s;
+#define TIMER 1
 
 /*
  * Fill in code for the Login process here. This function is called by the
@@ -28,20 +34,36 @@
  * 
  * @returns int     Success status: 0 success, -1 failure
  */
-#define SIZE 1024
 int sockfd;
 int create_connection();
-FILE* getFile(char* buffer);
 
-void send_file(FILE *fd, int sockfd);
 int sendTGETMessage(int sockfd,char* filename);
-int write_file_here(int sockfd,FILE *fd,unsigned long expectedSize);
 int sendTPUTMessage(int sockfd, char* filename);
-short recvAck(int sockfd);//does this need to have a timer?
 int ProcessLogin( uint32_t sipaddr, char *username, char *password ) {
   	printf("Library called the login function <%s> <%s>\n", username, password);
   // Place your connection and authentication process code here
 	sockfd= create_connection();//OPEN connection
+	if (pipe(p) < 0)
+	{
+		printf("piping failed");
+		exit(0);
+	}
+
+	struct timeval timev;
+	timev.tv_sec = TIMER;
+	timev.tv_usec = 0;
+
+	FD_ZERO(&rfds);
+	FD_SET(sockfd, &rfds);
+	FD_SET(p[0], &rfds);
+	FD_SET(0, &rfds); //stdin
+
+	s = select(1024, &rfds, NULL, NULL, NULL);
+	if (s == -1)
+		{
+			perror("select failed!");
+			exit(1);
+		}
   Authenticated();
   return 0;
 }
@@ -79,7 +101,7 @@ int ProcessPutFile( char *filename ) {
 	int status =sendTPUTMessage(sockfd,filename);
 	printf("here!\n\n\n\n");
 	fflush(stdin);
-
+	
 	short completion_value =recvAck(sockfd);
 	if(completion_value <0){
 		printf("An error occured sending the file");
@@ -104,15 +126,28 @@ int ProcessGetFile( char *filename ) {
   printf("Library called the TGET function with file: <%s>\n", filename );
   // Place your File Download code here
 	sendTGETMessage(sockfd,filename);
-	FILE* fd =fopen(filename, "r");
-	short completion_value =recvAck(sockfd);
+	short completion_value=0;
+	if(s>0){
+		if(FD_ISSET(sockfd,&rfds)){
+			short completion_value =recvAck(sockfd);
+			}
+	}
 	short status=0;
 	if(completion_value <0){
 		printf("The server does not have that file");
 		status =-99;
 	}
 	else{
-		write_file_here(sockfd,fd);
+		unsigned long size=0;
+		if(recv(sockfd,&size, sizeof(unsigned long),0)<0){
+
+			perror("err on recv");
+			status = -99;
+		}
+		FILE* fd =fopen(filename, "w+");
+		printf("SIZE: %lu",size);
+		fflush(stdout);
+		write_file_here(sockfd,fd,size);
 	}
   return status;
 }
@@ -166,40 +201,10 @@ int ProcessChangeDir( char *dirname ) {
 void EmergencyShutdown() {
 	close(sockfd);
 }
-short recvAck(int sockfd){
-	char buffer[2];
-	recv(sockfd,buffer,2,0);
-	if(recv<0){
-		return -99;
-	}
-	return (*buffer);
-}
-FILE * getFile(char* filename){
-	FILE *file;
-    
-    if (file = fopen(filename, "r")) {
-		printf("file exists");
-    }
-    else
-    {
-        printf("file %s doesn't exist",filename);
-    }
-	fflush(stdin);
-	return file;
-}
-
-unsigned long int getfilesize(FILE *fd){
-    unsigned long int prev=ftell(fd); 
-    fseek(fd, 0L, SEEK_END);
-    unsigned long int sz=ftell(fd);
-    fseek(fd,prev,SEEK_SET); //go back to where we were
-    return sz;
-}
 
 
 int sendTPUTMessage(int sockfd, char* filename){
 	int sendcommand=0;
-
 	unsigned long int size =0;
 	FILE* fd =getFile(filename);
 	size = getfilesize(fd);
@@ -211,12 +216,11 @@ int sendTPUTMessage(int sockfd, char* filename){
 	strcat(message," tput ");//the thing that differeantes it from  other commands
 	sprintf(temp,"%lu",size);
 	strcat(message,temp);
-
 	sendcommand= send(sockfd,message,strlen(message),0);
 	if(sendcommand<0){
 		perror("error on sending tput command");
 	}
-	printf("SENDING TPUT COMMAND\n");
+	printf("\nSENDING TPUT COMMAND!\n");
 	fflush(stdin);
 	free(message);
 
@@ -228,12 +232,12 @@ int sendTGETMessage(int sockfd,char* filename){
 	int sendcommand=0;
 	char* message=malloc(strlen(filename));
 	strcpy(message,filename);
-	strcat(message," tget");//the thing that differeantes it from  other commands
+	strcat(message," tget ");//the thing that differeantes it from  other commands
 	sendcommand= send(sockfd,message,strlen(message),0);
 	if(sendcommand<0){
 		perror("error on sending tget command");
 	}
-
+	free(message);
 	return sendcommand;
 
 }
@@ -271,45 +275,12 @@ int create_connection(){
 
 }
 
-void send_file(FILE *fd, int sockfd){
-	char data[SIZE]={0};
-	int sendfile=0;
-	while (fgets(data, SIZE,fd)!=NULL)	{
-		sendfile= send(sockfd,data,sizeof(data),0);
-		if(sendfile==-1){
-			perror("could not send");
-			exit(1);
-		}
-		bzero(data,SIZE);
-	}
-}
-int write_file_here(int sockfd,FILE *fd,unsigned long expectedSize){
-	int recieve;
-	char buffer[SIZE];
-	unsigned long count =0;
-	while(count<expectedSize){
-		recieve= recv(sockfd,buffer,SIZE,0);
-		count+=recieve;
-		fflush(stdin);
-		if(recieve==0){//should be less than 0 for err
-			break;
-		}
-		if(recieve <=-1){
-			perror("err on recieve");
-			return -99;
-		}
-		fprintf(fd,"%s",buffer);
-		fflush(stdin);
-		bzero(buffer,SIZE);
-	}
-	printf("out of write file here method\n");
-	fflush(stdin);
-	return 0;
-}/*****************************************************************************
+/*****************************************************************************
  * Main Entry - Add any statup code required
  *****************************************************************************/
 int main( int argc, char **argv ) 
 {
+	
   /*
    * Place any startup code you need here
    */
