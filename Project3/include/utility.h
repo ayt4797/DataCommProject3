@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 
 #define SIZE 1024 //max size of fgets not tcp
+#define MAX_NUM_BYTES_FROM_CWD 1000
 FILE* getFileFromBuffer(char* buffer,char* readWrite,char* ret);
 FILE * getFile(char* filename);
 unsigned long int getfilesize(FILE *fd);

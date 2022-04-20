@@ -19,7 +19,6 @@ fd_set rfds;
 int p[2];
 int s;
 #define TIMER 1
-
 /*
  * Fill in code for the Login process here. This function is called by the
  * lexer library wheen the user insantiaties the TCONNECT command. Be sure
@@ -58,7 +57,7 @@ int ProcessLogin( uint32_t sipaddr, char *username, char *password ) {
 	FD_SET(p[0], &rfds);
 	FD_SET(0, &rfds); //stdin
 
-	s = select(1024, &rfds, NULL, NULL, NULL);
+	s = select(1024, &rfds, NULL, NULL, &timev);
 	if (s == -1)
 		{
 			perror("select failed!");
@@ -127,11 +126,11 @@ int ProcessGetFile( char *filename ) {
   // Place your File Download code here
 	sendTGETMessage(sockfd,filename);
 	short completion_value=0;
-	if(s>0){
-		if(FD_ISSET(sockfd,&rfds)){
-			short completion_value =recvAck(sockfd);
-			}
-	}
+	// if(s>0){
+		// if(FD_ISSET(sockfd,&rfds)){
+			completion_value =recvAck(sockfd);
+			// }
+	// }
 	short status=0;
 	if(completion_value <0){
 		printf("The server does not have that file");
@@ -167,7 +166,15 @@ int ProcessListDir() {
   // Place your Directory Listing code here
 	//	sendfile= send(sockfd,data,sizeof(data),0);
   //
-	send(sockfd,"TLIST",6,0);
+
+	send(sockfd,"TLIST",5,0);
+	char dir[MAX_NUM_BYTES_FROM_CWD];
+	if(recv(sockfd,dir, MAX_NUM_BYTES_FROM_CWD,0)<0){ //too many bytes.
+		perror("error on recv");
+
+		}
+	printf("\nDIRECTORY : %s\n",dir);
+
   return 0;
 }
 
@@ -180,13 +187,21 @@ int ProcessListDir() {
  * @returns int     Status of the operation 0 for success, -1 for failure
  */
 int ProcessChangeDir( char *dirname ) {
-	printf("Library called the TCWND function: <%s>\n", dirname);
-	printf("DIR NAME : %s",dirname);
-	//strcat
-	send(sockfd,dirname,sizeof(dirname),0);
-
-  // Place your Change Directory request code here
-
+	printf("Library called the TCWD function: <%s>\n", dirname);
+	fflush(stdout);
+	char* message = malloc(strlen(dirname));
+	strcpy(message,dirname);
+	strcat(message," TCWD ");
+	//strctat
+	send(sockfd,message,strlen(message),0);
+	if(recvAck(sockfd)<0){
+		printf("that file doesn't exist");
+		return -99;
+	}
+	else{
+		printf("Succesfully changed directory");
+	}
+	free(message);
   return 0;
 }
 
@@ -245,7 +260,7 @@ int sendTGETMessage(int sockfd,char* filename){
 int create_connection(){
 	struct sockaddr_in server_addr, new_addr;
 	char *ip="0.0.0.0";
-	int port =8888;
+	int port =8887;
 	int connecting;
 	
 	int sockfd;
@@ -266,10 +281,10 @@ int create_connection(){
 	connecting = connect(sockfd,(struct sockaddr*)&server_addr, sizeof(server_addr));
 
 	if(connecting<0){
-		perror("error in connecting");
-		return -99;
+		perror("error in connecting\n");
+		exit(1);
 	}
-	printf("Connected to server");
+	printf("Connected to server\n");
 
 	return sockfd;
 
