@@ -1,22 +1,32 @@
 #include "../../include/utility.h"
 
+void getOptionFromBuffer(char* buffer, char* filenameBuffer){
+	printf("buffer (pre uniforming) %s\n", buffer);
+	strcpy(filenameBuffer,buffer+4);
+	printf("File name :%s\n", filenameBuffer);
+	fflush(stdout);
+}
 
-FILE* getFileFromBuffer(char* buffer,char* readWrite,char* ret){
-	char* filename= malloc(ret-buffer-1); //I think the one is the space
-
-	memcpy(filename,buffer,(ret-buffer-1));
-	printf("filename %s\n", filename);
-	printf("buffer %s\n", buffer);
+unsigned long int seperateSizeFromOption(char* option){
+	unsigned long int size;
+	option += SIZEOFCOMMAND; //there's no reason to do the check for whitespace like above b/c it should already be uniform
+	printf("option + 5: %s",option);
+	sscanf(option, "%lu", &size);
+	printf("size : %lu \n",size);
 	fflush(stdin);
+	return size;
+}
 
+FILE* GetFileFromBuffer(char* buffer, char* readWrite){
+	char filename[SIZE];
+	getOptionFromBuffer(buffer,filename);
+	printf("opening file %s\n",filename);
 	FILE* fd = fopen(filename,readWrite);
 	if(fd<0){
 		perror("could not open file");
 	}
-	free(filename);
 	printf("END OF GET FILE \n\n\n");
 	return fd;
-	
 }
 
 FILE * getFile(char* filename){

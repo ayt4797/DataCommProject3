@@ -38,10 +38,16 @@ int create_connection();
 
 int sendTGETMessage(int sockfd,char* filename);
 int sendTPUTMessage(int sockfd, char* filename);
+void assembleMessage(char* command, char* options, char* result);
+void assembleTputMessage(char* command, char* option, unsigned long size, char* result );
 int ProcessLogin( uint32_t sipaddr, char *username, char *password ) {
   	printf("Library called the login function <%s> <%s>\n", username, password);
   // Place your connection and authentication process code here
 	sockfd= create_connection();//OPEN connection
+	if(sockfd<0){
+		perror("failure on conenction");
+		return -99;
+	}
 	if (pipe(p) < 0)
 	{
 		printf("piping failed");
@@ -78,7 +84,6 @@ int ProcessLogin( uint32_t sipaddr, char *username, char *password ) {
 int ProcessLogout() {
   // Place your disconnection and memory deallocation code here
   Deauthenticate();
-  close(sockfd);
 
 }
 
@@ -167,7 +172,7 @@ int ProcessListDir() {
 	//	sendfile= send(sockfd,data,sizeof(data),0);
   //
 
-	send(sockfd,"TLIST",5,0);
+	send(sockfd,"TLIST",6,0);
 	char dir[MAX_NUM_BYTES_FROM_CWD];
 	if(recv(sockfd,dir, MAX_NUM_BYTES_FROM_CWD,0)<0){ //too many bytes.
 		perror("error on recv");
@@ -189,10 +194,8 @@ int ProcessListDir() {
 int ProcessChangeDir( char *dirname ) {
 	printf("Library called the TCWD function: <%s>\n", dirname);
 	fflush(stdout);
-	char* message = malloc(strlen(dirname));
-	strcpy(message,dirname);
-	strcat(message," TCWD ");
-	//strctat
+	char message[SIZE];
+	assembleMessage("TWCD",dirname,message);
 	send(sockfd,message,strlen(message),0);
 	if(recvAck(sockfd)<0){
 		printf("that file doesn't exist");
@@ -201,7 +204,6 @@ int ProcessChangeDir( char *dirname ) {
 	else{
 		printf("Succesfully changed directory");
 	}
-	free(message);
   return 0;
 }
 
@@ -214,53 +216,44 @@ int ProcessChangeDir( char *dirname ) {
  *
  */
 void EmergencyShutdown() {
+	send(sockfd,EXIT_SESSION,13,0);
 	close(sockfd);
 }
 
 
 int sendTPUTMessage(int sockfd, char* filename){
-	int sendcommand=0;
 	unsigned long int size =0;
 	FILE* fd =getFile(filename);
 	size = getfilesize(fd);
 	printf("file size: %lu", size);
-	char* message=malloc(strlen(filename));
-	char temp[20];
-	strcpy(message,filename);
+	char message[SIZE];
+	assembleTputMessage("tput",filename,size,message);
 
-	strcat(message," tput ");//the thing that differeantes it from  other commands
-	sprintf(temp,"%lu",size);
-	strcat(message,temp);
-	sendcommand= send(sockfd,message,strlen(message),0);
+	int sendcommand= send(sockfd,message,strlen(message)+1,0);
 	if(sendcommand<0){
 		perror("error on sending tput command");
 	}
 	printf("\nSENDING TPUT COMMAND!\n");
 	fflush(stdin);
-	free(message);
 
 	send_file(fd,sockfd); //there is error checking in the send_file method
 	return sendcommand;
 }
 
 int sendTGETMessage(int sockfd,char* filename){
-	int sendcommand=0;
-	char* message=malloc(strlen(filename));
-	strcpy(message,filename);
-	strcat(message," tget ");//the thing that differeantes it from  other commands
-	sendcommand= send(sockfd,message,strlen(message),0);
+	char message[SIZE];
+	assembleMessage("tget",filename,message);
+	int sendcommand= send(sockfd,message,strlen(message)+1,0);
 	if(sendcommand<0){
 		perror("error on sending tget command");
 	}
-	free(message);
 	return sendcommand;
-
 }
 
 int create_connection(){
 	struct sockaddr_in server_addr, new_addr;
 	char *ip="0.0.0.0";
-	int port =8887;
+	int port =8884;
 	int connecting;
 	
 	int sockfd;
@@ -282,14 +275,24 @@ int create_connection(){
 
 	if(connecting<0){
 		perror("error in connecting\n");
-		exit(1);
+		return -99;
 	}
-	printf("Connected to server\n");
-
+	else{
+		printf("Connected to server\n");
+	}
 	return sockfd;
 
 }
-
+void assembleMessage(char* command, char* option, char* result){
+	strcpy(result,command);
+	strcat(result, option);
+}
+void assembleTputMessage(char* command, char* option, unsigned long size, char* result ){
+	assembleMessage(command,option,result);
+	char temp[20];
+	sprintf(temp,"%lu",size);
+	strcat(result,temp);
+}
 /*****************************************************************************
  * Main Entry - Add any statup code required
  *****************************************************************************/

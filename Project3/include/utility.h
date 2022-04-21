@@ -7,7 +7,11 @@
 
 #define SIZE 1024 //max size of fgets not tcp
 #define MAX_NUM_BYTES_FROM_CWD 1000
-FILE* getFileFromBuffer(char* buffer,char* readWrite,char* ret);
+#define SIZEOFCOMMAND 4
+#define EXIT_SESSION "EXIT SESSION"
+void getOptionFromBuffer(char* buffer, char* filenameBuffer); //this parses is the past message for the option
+FILE* GetFileFromBuffer(char* buffer, char* readWrite); //this calls get option from buffer & returns a file
+unsigned long int seperateSizeFromOption(char* option);
 FILE * getFile(char* filename);
 unsigned long int getfilesize(FILE *fd);
 void send_completion_ack(int sock,char* isSuccess);

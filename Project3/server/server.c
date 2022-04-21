@@ -12,11 +12,11 @@ struct sockaddr_in server_addr, new_addr;
 
 int handleCommands(char* buffer,int sock);
 void sendfilesize(FILE* fd,int sock);
-
+void exit_session(int sock);
 int main(){
 
 	char *ip="0.0.0.0";
-	int port =8887;
+	int port =8884;
 	int binding;
 	int listening;
     char *ret;
@@ -44,7 +44,7 @@ int main(){
 	}
 	printf("past bind");
 
-	listening = listen(sockfd,10000);
+	listening = listen(sockfd,10);
 
 	if(listening==0){
 		printf("listening");
@@ -66,7 +66,8 @@ int main(){
 		recv(new_sock,buffer,SIZE,0);
 		if(handleCommands(buffer,new_sock)<0){
 			perror("error on handle command\n");
-			continue;
+				close(new_sock);
+				return 0;
 		}
 		printf("finished a loop");
 		fflush(stdin);
@@ -76,39 +77,39 @@ int main(){
 }
 
 int handleCommands(char* buffer,int sock){
-	char* ret =strstr(buffer,"tput");
+	char* option = malloc(strlen(buffer)); 
 	int returnstatus=0;
+	if(strcmp(buffer,EXIT_SESSION)==0){
+		exit_session(sock);
+	}
+	char* ret =strstr(buffer,"tput");
 	if(ret){
 		printf("handling tput\n");
 		fflush(stdin);
-
-		unsigned long int size;
-		printf("ret + 5: %s",ret+5);
-		sscanf(ret+5, "%lu", &size);
-		printf("size : %lu \n",size);
-		fflush(stdin);
-				
-		returnstatus=write_file_here(sock,getFileFromBuffer(buffer,"w+",ret),size);
+		getOptionFromBuffer(buffer,option);
+		unsigned long size = seperateSizeFromOption(option);
+		returnstatus=write_file_here(sock,GetFileFromBuffer(buffer,"w+"),size);
 		if(returnstatus<0){
 			send_completion_ack(sock,"-99");
 			perror("could not write file");
-			exit(1);
+			returnstatus =-99;
 		}
 		else{
 			send_completion_ack(sock,"99");
 		}
+		bzero(ret,SIZEOFCOMMAND);
 	}
 	ret =strstr(buffer,"tget");
 	if(ret){
-		printf("handling tget\n");
-		fflush(stdin);
-		FILE* fd =getFileFromBuffer(buffer, "r",ret);
+		printf("\nhandling tget\n");
+		fflush(stdout);
+		FILE* fd =GetFileFromBuffer(buffer, "r");
 		if(fd==NULL){
 			perror("FILE DOES NOT EXIST");
-			fflush(stdin);
+			fflush(stdout);
 
 			send_completion_ack(sock,"-99");
-			return -99;
+			returnstatus= 0;
 			
 		}
 		else{
@@ -119,6 +120,8 @@ int handleCommands(char* buffer,int sock){
 			send_file(fd,sock);
 			returnstatus =0;
 		}
+		bzero(ret,SIZEOFCOMMAND);
+
 	}
 	ret =strstr(buffer,"TLIST");
 	if(ret){
@@ -149,34 +152,31 @@ int handleCommands(char* buffer,int sock){
 			free(message);
 		} else {
 			perror("getcwd() error");
-			return -99;
+			returnstatus= -99;
 		}
+		bzero(ret,SIZEOFCOMMAND);
+
 	}
 	ret =strstr(buffer,"TCWD");
 	if(ret){
-		char* dirname= malloc(ret-buffer-1); //I think the one is the space
-		memcpy(dirname,buffer,(ret-buffer-1));
-		printf("\ndirname :%s\n", dirname);
-		printf("strlen: of dirname : %zu\n", strlen(dirname));
+		getOptionFromBuffer(buffer,option);
 		fflush(stdout);
-		if (chdir(dirname) == 0) {
-			printf("dir: %s exists\n", dirname);
+		if (chdir(option) == 0) {
+			printf("dir: %s exists\n", option);
 			send_completion_ack(sock,"99");
-			return 0;
+			returnstatus= 0;
 		} else {
 			send_completion_ack(sock,"-99");
 			printf("dir doesn't exist\n");
-			return -99;
+			returnstatus= 0;
 		}
-		free(dirname);
+		bzero(ret,SIZEOFCOMMAND);
+
 	}
-	else{
-		printf("failed");
-		fflush(stdout);
-	}
+
 	printf("exiting handler");
 	fflush(stdin);
-
+	free(option);
 
 	return returnstatus;
 }
@@ -187,3 +187,7 @@ void sendfilesize(FILE* fd,int sock){
 	send(sock,&size,sizeof(unsigned long),0);
 }
 
+void exit_session(int sock){
+	close(sock);
+	exit(1);
+}
