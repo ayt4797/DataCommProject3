@@ -1,12 +1,24 @@
 #include "../../include/utility.h"
 
+/**
+ * @brief Get the Option From Buffer object
+ * simply adds the buffer +4 then copies that to an outbuffer
+ * @param buffer 
+ * @param filenameBuffer 
+ */
 void getOptionFromBuffer(char* buffer, char* filenameBuffer){
-	printf("buffer (pre uniforming) %s\n", buffer);
+	printf("buffer: %s\n", buffer);
 	strcpy(filenameBuffer,buffer+4);
 	printf("File name :%s\n", filenameBuffer);
 	fflush(stdout);
 }
-
+/**
+ * @brief scans the option seperated from the buffer
+ * seperates the buffer from the size that was attatched to the original message
+ * using sscanf
+ * @param option 
+ * @return unsigned long int 
+ */
 unsigned long int seperateSizeFromOption(char* option){
 	unsigned long int size;
 	char message[SIZE];
@@ -19,7 +31,13 @@ unsigned long int seperateSizeFromOption(char* option){
 	
 	return size;
 }
-
+/**
+ * @brief Get the File From Filename object
+ * 
+ * @param buffer 
+ * @param readWrite 
+ * @return FILE* 
+ */
 FILE* GetFileFromFilename(char* buffer, char* readWrite){
 	char filename[SIZE];
 	strcpy(filename,buffer);
@@ -30,8 +48,12 @@ FILE* GetFileFromFilename(char* buffer, char* readWrite){
 	printf("END OF GET FILE \n\n\n");
 	return fd;
 }
-
-//returns a file descriptor for a file, returns NULL if the file doesn't exist
+/**
+ * @brief Get the File object returns a file descriptor for a file, returns NULL if the file doesn't exist
+ * 
+ * @param filename 
+ * @return FILE* 
+ */
 FILE * getFile(char* filename){
 	FILE *file;
     
@@ -45,6 +67,12 @@ FILE * getFile(char* filename){
 	fflush(stdin);
 	return file;
 }
+/**
+ * @brief goes from the top of the file to get the size of the file from the fd
+ * 
+ * @param fd 
+ * @return unsigned long int 
+ */
 unsigned long int getfilesize(FILE *fd){
 	rewind(fd);
     unsigned long int prev=ftell(fd); 
@@ -55,34 +83,40 @@ unsigned long int getfilesize(FILE *fd){
     return sz;
 }
 
-void send_completion_ack(int sock,char* isSuccess){
-	printf("\nack value sending: %s\n",isSuccess);
-	int sendfile= send(sock,isSuccess,SIZEOFACK,0);
+/**
+ * @brief sends 4 characters to inform the user if the prevoius action was a sucess or a failure
+ * 
+ * @param sock 
+ * @param isSuccess 
+ */
+void send_completion_ack(int sock,short isSuccess){
+	printf("\nack value sending: %d\n",isSuccess); //strlen(isSuccess)+1
+	int sendfile= send(sock,&isSuccess,SIZEOFACK,0);
 	if(sendfile<=0){
 		perror("error on send ack");
-		fflush(stdin);
-		exit(1);
+		fflush(stdout);
+		// exit(1);
 	}
 }
+/**
+ * @brief recieves the send_completion_ack function
+ * 
+ * @param sockfd 
+ * @return short 
+ */
 short recvAck(int sockfd){
 	
-	char buffer[SIZEOFACK];
+	short buffer;
 	int r = recv(sockfd,&buffer,SIZEOFACK,0);
 	if(r<0){
 		perror("couldn't recv");
 		return -99;
 	}
 
-	int ack=0;
-	if(sscanf(buffer,"%d",&ack)==EOF){
-		perror("error on finding the ACK VALUE");
-	}
-	
-	printf("ACK VALUE: %s\n",buffer);
-	printf("ACK VALUE: %d\n",ack);
+	printf("ACK VALUE: %d\n",buffer);
 
 
-	if(ack<0){
+	if(buffer<0){
 		return -99;
 	}
 	else{
@@ -90,7 +124,14 @@ short recvAck(int sockfd){
 	}
 }
 
-//a wrapper for the sendfile method
+/**
+ * @brief a wrapper for the sendfile method
+ * 
+ * @param file 
+ * @param sockfd 
+ * @param size 
+ * @return int 
+ */
 int send_file(char* file, int sockfd,unsigned long size){
 	int f;
 	short sf = sendfile(sockfd,f=open(file,'r',O_CREAT),NULL,size);
@@ -101,6 +142,14 @@ int send_file(char* file, int sockfd,unsigned long size){
 		}
 	return sf;
 }
+/**
+ * @brief waits on the port using recv and reads SIZE amount from the buffer
+ * and then writes them to a file.
+ * @param sockfd 
+ * @param fd 
+ * @param expectedSize 
+ * @return int 
+ */
 int write_file_here(int sockfd,FILE *fd,unsigned long expectedSize){
 	int recieve=0; //can't be unsigned b/c can be negative
 	char buffer[SIZE];
@@ -109,12 +158,12 @@ int write_file_here(int sockfd,FILE *fd,unsigned long expectedSize){
 	fflush(stdin);
 
 	while(count<expectedSize){
+		bzero(buffer,SIZE);
 		recieve= recv(sockfd,buffer,SIZE,0);
 		count+=recieve;
-		fflush(stdin);
 		printf("Recieved bits: %d\n",recieve );
 		printf("counted bits: %lu\n",count );
-		fflush(stdin);
+		fflush(stdout);
 		if(recieve==0){//should be less than 0 for err
 			break;
 		}
@@ -122,7 +171,7 @@ int write_file_here(int sockfd,FILE *fd,unsigned long expectedSize){
 			perror("err on recieve");
 			return -99;
 		}
-		printf("%s\n",buffer);
+		// printf("%s\n",buffer);
 		int printReturn = fputs(buffer,fd);
 		fflush(stdout);
 
@@ -131,12 +180,11 @@ int write_file_here(int sockfd,FILE *fd,unsigned long expectedSize){
 			perror("error on writing file");
 			return -99;
 		}
-		fflush(stdin);
-		bzero(buffer,SIZE);
+		fflush(stdout);
 	}
 	fclose(fd);
 	printf("out of write file here method\n");
-	fflush(stdin);
+	fflush(stdout);
 	return 0;
 }
 

@@ -13,6 +13,14 @@ struct sockaddr_in server_addr, new_addr;
 int handleCommands(char* buffer,int sock);
 void sendfilesize(FILE* fd,int sock);
 void exit_session(int sock);
+
+/**
+ * @brief is the main
+ * 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int main(int argc, char *argv[]) {
 	
 	char *ip="0.0.0.0";
@@ -72,7 +80,8 @@ int main(int argc, char *argv[]) {
 		if(listeningOnAcceptId<0){
 			perror("FORK FAILED!: ");
 		}
-		printf("acceptanace!");
+		
+		printf("\nacceptanace!");
 		fflush(stdout);
 		if(!listeningOnAcceptId){ //!0=1
 			break;
@@ -80,21 +89,34 @@ int main(int argc, char *argv[]) {
 	
 	}
 	while(1){
+		bzero(buffer,SIZE);
 		int r =recv(new_sock,buffer,SIZE,0);
 		if(r<0){
 			perror("Err on recieve: ");
 		}
-		if(handleCommands(buffer,new_sock)<0){
+		if(r>0&&handleCommands(buffer,new_sock)<0){
 			perror("error on handle command\n");
-				close(new_sock);
-				return 0;
+			close(new_sock);
+			return 0;
 		}
-		printf("finished a loop");
+		if(strcmp(buffer,EXIT_SESSION)==0){
+			printf("EXITING");
+			close(new_sock);
+			break;
+		}
 		fflush(stdin);
 	}
 	close(new_sock);
 	return 0;
 }
+/**
+ * @brief this checks the buffer, and seperate it from the option, then calls function from utility.c 
+ * to actually handle the command.
+ * 
+ * @param buffer 
+ * @param sock 
+ * @return int 
+ */
 
 int handleCommands(char* buffer,int sock){
 	char* option = malloc(strlen(buffer)); 
@@ -102,9 +124,7 @@ int handleCommands(char* buffer,int sock){
 		perror("MALLOC FAILED: ");
 	}
 	int returnstatus=0;
-	if(strcmp(buffer,EXIT_SESSION)==0){
-		exit_session(sock);
-	}
+	printf("BUFFER %s", buffer);
 	char* ret =strstr(buffer,"tput");
 	if(ret){
 		printf("handling tput\n");
@@ -113,12 +133,8 @@ int handleCommands(char* buffer,int sock){
 		unsigned long size = seperateSizeFromOption(option);
 		returnstatus=write_file_here(sock,GetFileFromFilename(option,"w+"),size);
 		if(returnstatus<0){
-			send_completion_ack(sock,"-99");
 			perror("could not write file");
 			returnstatus =-99;
-		}
-		else{
-			send_completion_ack(sock,"99");
 		}
 		bzero(ret,SIZEOFCOMMAND);
 	}
@@ -129,20 +145,20 @@ int handleCommands(char* buffer,int sock){
 		getOptionFromBuffer(buffer,option);
 		FILE* file = getFile(option);//purely for checking if the file exists
 		if(file==NULL){
-			send_completion_ack(sock,"-99");
+			send_completion_ack(sock,-99);
 			returnstatus =0;
 			}
 		else{
 			fclose(file);
-			send_completion_ack(sock, "99");
+			send_completion_ack(sock, 99);
 			unsigned long size = getfilesize(getFile(option));
 			int s =send(sock,&size,sizeof(unsigned long),0);
-			if(s<0){
+			if(s==-1){
 				perror("error on sending: ");
 			}
-			short sf = send_file(option, sock,size);
+			short sf = send_file(option, sock,size);  
 			if(sf<0)
-				send_completion_ack(sock,"-99");
+				perror("error on sending file");
 			bzero(ret,SIZEOFCOMMAND);
 		}
 	}
@@ -176,16 +192,22 @@ int handleCommands(char* buffer,int sock){
 				closedir(d);
 			}
 			//condense all the file names together into a single string to send
-			int s=send(sock,message,strlen(message)+1,0);
+			unsigned long long int size= strlen(message)+1; //send the size of that message
+			int s=send(sock,&size,sizeof(unsigned long long int),0); 
 			if(s<0){
-				perror("ERROR ON SENDING : ");
+				perror("ERROR ON SENDING SIZE: ");
+			}
+
+			s=send(sock,message,strlen(message)+1,0);
+			if(s<0){
+				perror("ERROR ON SENDING TLIST: ");
 			}
 			free(message);
 		} else {
 			perror("getcwd() error");
 			returnstatus= -99;
 		}
-		bzero(ret,SIZEOFCOMMAND);
+		bzero(ret,5);
 
 	}
 	ret =strstr(buffer,"TCWD");
@@ -195,23 +217,27 @@ int handleCommands(char* buffer,int sock){
 		fflush(stdout);
 		if (chdir(option) == 0) {
 			printf("dir: %s exists\n", option);
-			send_completion_ack(sock,"99");
+			send_completion_ack(sock,99);
 			returnstatus= 0;
 		} else {
-			send_completion_ack(sock,"-99");
+			send_completion_ack(sock,-99);
 			printf("dir doesn't exist\n");
 			returnstatus= 0;
 		}
 		bzero(ret,SIZEOFCOMMAND);
 
 	}
-
-	printf("exiting handler");
-	fflush(stdin);
 	free(option);
 
 	return returnstatus;
 }
+
+/**
+ * @brief sends the filesize  not in ascii format, but as bytes.
+ * 
+ * @param fd 
+ * @param sock 
+ */
 
 void sendfilesize(FILE* fd,int sock){
 	unsigned long  size = getfilesize(fd);
@@ -219,9 +245,4 @@ void sendfilesize(FILE* fd,int sock){
 	if(send(sock,&size,sizeof(unsigned long),0)<0){
 		perror("Error on sending");
 	}
-}
-
-void exit_session(int sock){
-	close(sock);
-	exit(1);
 }

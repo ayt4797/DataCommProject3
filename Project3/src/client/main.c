@@ -63,6 +63,9 @@ int ProcessLogin( uint32_t sipaddr, char *username, char *password ) {
  */
 int ProcessLogout() {
   // Place your disconnection and memory deallocation code here
+  send(sockfd,EXIT_SESSION,13,0);
+  close(sockfd);
+  printf("exiting\n");
   Deauthenticate();
 
 }
@@ -88,12 +91,6 @@ int ProcessPutFile( char *filename ) {
 		fflush(stdout);
 		return status;
 	}
-	printf("waiting on ack");
-	short completion_value =recvAck(sockfd);
-	if(completion_value <0){
-		printf("An error occured sending the file");
-		status =-99;
-	}
   	return status;
 }
 
@@ -114,11 +111,7 @@ int ProcessGetFile( char *filename ) {
   // Place your File Download code here
 	sendTGETMessage(sockfd,filename);
 	short completion_value=0;
-	// if(s>0){
-		// if(FD_ISSET(sockfd,&rfds)){
 	completion_value =recvAck(sockfd);
-			// }
-	// }
 	short status=0;
 	if(completion_value <0){
 		printf("The server does not have that file");
@@ -161,8 +154,14 @@ int ProcessListDir() {
 	if(send(sockfd,"TLIST",6,0)<0){
 		perror("could not TLIST cmd");
 	}
-	char dir[MAX_NUM_BYTES_FROM_CWD];
-	if(recv(sockfd,dir, MAX_NUM_BYTES_FROM_CWD,0)<0){ //too many bytes.
+	unsigned long long size=0;
+	if(recv(sockfd,&size, sizeof(unsigned long long),0)<0){ //too many bytes.
+		perror("error on recv");
+		return -99;
+	}
+
+	char* dir = malloc(size);
+	if(recv(sockfd,dir, size,0)<0){ //too many bytes.
 		perror("error on recv");
 		return -99;
 		}
@@ -211,7 +210,14 @@ void EmergencyShutdown() {
 	}
 	close(sockfd);
 }
-
+/**
+ * @brief SendTPUTMessage takes the target socket, & the name of the file you wish to send. 
+ * the function will send first the command+the size of the message. That is used for the next
+ * sendfile message
+ * @param sockfd 
+ * @param filename 
+ * @return int 
+ */
 
 int sendTPUTMessage(int sockfd, char* filename){
 	unsigned long int size =0;
@@ -239,7 +245,13 @@ int sendTPUTMessage(int sockfd, char* filename){
 	}
 	return sendcommand;
 }
-
+/**
+ * @brief the tgeet message sends the premptive command message to the server to tell it to
+ * find the file and send it over
+ * @param sockfd 
+ * @param filename 
+ * @return int 
+ */
 int sendTGETMessage(int sockfd,char* filename){
 	char message[SIZE];
 	assembleMessage("tget",filename,message);
@@ -250,18 +262,24 @@ int sendTGETMessage(int sockfd,char* filename){
 	return sendcommand;
 }
 
+/**
+ * @brief Create a connection object
+ * converts an ip to an address, then starts a connection w/ the server sits only the DEFAULT_PORT
+ * @param ip 
+ * @return int 
+ */
+
 int create_connection(uint32_t ip){
 	struct sockaddr_in server_addr, new_addr;
 	int port =DEFAULT_PORT;
 	int connecting;
+	ip = htonl(ip);
     struct in_addr ip_addr;
     ip_addr.s_addr = ip;
     printf("The IP address is %s\n", inet_ntoa(ip_addr));
 
 	int sockfd;
 	FILE *fd;
-
-	char* filename="tst.txt";
 
 	sockfd =socket(AF_INET,SOCK_STREAM,0);
 	
@@ -285,10 +303,25 @@ int create_connection(uint32_t ip){
 	return sockfd;
 
 }
+/**
+ * @brief simply a way of combining the command w/ the filename (I called it an option to make it more generic)
+ * 
+ * @param command 
+ * @param option 
+ * @param result 
+ */
 void assembleMessage(char* command, char* option, char* result){
 	strcpy(result,command);
 	strcat(result, option);
 }
+/**
+ * @brief this does the same thing as assemble message, execpt it appends the size at the end
+ * 
+ * @param command 
+ * @param option 
+ * @param size 
+ * @param result 
+ */
 void assembleTputMessage(char* command, char* option, unsigned long size, char* result ){
 	assembleMessage(command,option,result);
 	char temp[20];
