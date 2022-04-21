@@ -13,7 +13,7 @@
 #define SIZEOFCOMMAND 4
 #define EXIT_SESSION "EXIT SESSION"
 #define SIZEOFACK 4
-#define DEFAULT_PORT 8888
+#define DEFAULT_PORT 8887
 
 void getOptionFromBuffer(char* buffer, char* filenameBuffer); //this parses is the past message for the option
 FILE* GetFileFromFilename(char* buffer, char* readWrite); //this calls get option from buffer & returns a file

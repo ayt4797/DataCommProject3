@@ -17,13 +17,12 @@ int main(int argc, char *argv[]) {
 	
 	char *ip="0.0.0.0";
 	int port =DEFAULT_PORT;
-	if(argc <= 3){
-		printf("I need an ip addr and a port, defaulting to port %d on localhost",DEFAULT_PORT);
+	if(argc <= 2){
+		printf("I need a ip, defaulting to localhost");
 		fflush(stdout);
 	}
 	else{
 		ip = argv[1];
-		port = atoi(argv[2]);
 	}
 
 	int binding;
@@ -35,7 +34,6 @@ int main(int argc, char *argv[]) {
 	char buffer[SIZE];
 
 	sockfd =socket(AF_INET,SOCK_STREAM,0);
-	
 	if(sockfd<0){
 		perror("TCP socket failed");
 		return -99;
@@ -67,7 +65,13 @@ int main(int argc, char *argv[]) {
 	int listeningOnAcceptId;
 	while(1){
 		new_sock = accept(sockfd, (struct sockaddr*)&new_addr, &addr_size);
+		if(new_sock<0){
+			perror("will not accept!: ");
+			}
 		listeningOnAcceptId=fork();
+		if(listeningOnAcceptId<0){
+			perror("FORK FAILED!: ");
+		}
 		printf("acceptanace!");
 		fflush(stdout);
 		if(!listeningOnAcceptId){ //!0=1
@@ -76,7 +80,10 @@ int main(int argc, char *argv[]) {
 	
 	}
 	while(1){
-		recv(new_sock,buffer,SIZE,0);
+		int r =recv(new_sock,buffer,SIZE,0);
+		if(r<0){
+			perror("Err on recieve: ");
+		}
 		if(handleCommands(buffer,new_sock)<0){
 			perror("error on handle command\n");
 				close(new_sock);
@@ -91,6 +98,9 @@ int main(int argc, char *argv[]) {
 
 int handleCommands(char* buffer,int sock){
 	char* option = malloc(strlen(buffer)); 
+	if(option==NULL){
+		perror("MALLOC FAILED: ");
+	}
 	int returnstatus=0;
 	if(strcmp(buffer,EXIT_SESSION)==0){
 		exit_session(sock);
@@ -126,7 +136,10 @@ int handleCommands(char* buffer,int sock){
 			fclose(file);
 			send_completion_ack(sock, "99");
 			unsigned long size = getfilesize(getFile(option));
-			send(sock,&size,sizeof(unsigned long),0);
+			int s =send(sock,&size,sizeof(unsigned long),0);
+			if(s<0){
+				perror("error on sending: ");
+			}
 			short sf = send_file(option, sock,size);
 			if(sf<0)
 				send_completion_ack(sock,"-99");
@@ -151,7 +164,9 @@ int handleCommands(char* buffer,int sock){
 				while ((dir = readdir(d)) != NULL)
 				{
 					message = realloc(message,strlen(message)+strlen(dir->d_name)+2);
-
+					if(message==NULL){
+						perror("could not realloc");
+					}
 					strcat(message,dir->d_name);
 					strcat(message,"\n"); //right here
 
@@ -161,7 +176,10 @@ int handleCommands(char* buffer,int sock){
 				closedir(d);
 			}
 			//condense all the file names together into a single string to send
-			send(sock,message,strlen(message)+1,0);
+			int s=send(sock,message,strlen(message)+1,0);
+			if(s<0){
+				perror("ERROR ON SENDING : ");
+			}
 			free(message);
 		} else {
 			perror("getcwd() error");
@@ -198,7 +216,9 @@ int handleCommands(char* buffer,int sock){
 void sendfilesize(FILE* fd,int sock){
 	unsigned long  size = getfilesize(fd);
 	printf("sending file of size: %lu\n",size);
-	send(sock,&size,sizeof(unsigned long),0);
+	if(send(sock,&size,sizeof(unsigned long),0)<0){
+		perror("Error on sending");
+	}
 }
 
 void exit_session(int sock){

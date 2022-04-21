@@ -34,7 +34,7 @@ int s;
  * @returns int     Success status: 0 success, -1 failure
  */
 int sockfd;
-int create_connection();
+int create_connection(uint32_t ip);
 
 int sendTGETMessage(int sockfd,char* filename);
 int sendTPUTMessage(int sockfd, char* filename);
@@ -43,34 +43,14 @@ void assembleTputMessage(char* command, char* option, unsigned long size, char* 
 int ProcessLogin( uint32_t sipaddr, char *username, char *password ) {
   	printf("Library called the login function <%s> <%s>\n", username, password);
   // Place your connection and authentication process code here
-	sockfd= create_connection();//OPEN connection
+	sockfd= create_connection(sipaddr);//OPEN connection
 	if(sockfd<0){
 		perror("failure on conenction");
 		return -99;
 	}
-	if (pipe(p) < 0)
-	{
-		printf("piping failed");
-		exit(0);
-	}
-
-	struct timeval timev;
-	timev.tv_sec = TIMER;
-	timev.tv_usec = 0;
-
-	FD_ZERO(&rfds);
-	FD_SET(sockfd, &rfds);
-	FD_SET(p[0], &rfds);
-	FD_SET(0, &rfds); //stdin
-
-	s = select(1024, &rfds, NULL, NULL, &timev);
-	if (s == -1)
-		{
-			perror("select failed!");
-			exit(1);
-		}
-  Authenticated();
-  return 0;
+	
+  	Authenticated();
+  	return 0;
 }
 
 /*
@@ -136,7 +116,7 @@ int ProcessGetFile( char *filename ) {
 	short completion_value=0;
 	// if(s>0){
 		// if(FD_ISSET(sockfd,&rfds)){
-		completion_value =recvAck(sockfd);
+	completion_value =recvAck(sockfd);
 			// }
 	// }
 	short status=0;
@@ -152,6 +132,9 @@ int ProcessGetFile( char *filename ) {
 			status = -99;
 		}
 		FILE* fd =fopen(filename, "w+");
+		if(fd==NULL){
+			perror("Err on opening file: ");
+		}
 		printf("SIZE: %lu",size);
 		fflush(stdout);
 		write_file_here(sockfd,fd,size);
@@ -175,11 +158,13 @@ int ProcessListDir() {
 	//	sendfile= send(sockfd,data,sizeof(data),0);
   //
 
-	send(sockfd,"TLIST",6,0);
+	if(send(sockfd,"TLIST",6,0)<0){
+		perror("could not TLIST cmd");
+	}
 	char dir[MAX_NUM_BYTES_FROM_CWD];
 	if(recv(sockfd,dir, MAX_NUM_BYTES_FROM_CWD,0)<0){ //too many bytes.
 		perror("error on recv");
-
+		return -99;
 		}
 	printf("\nDIRECTORY : %s\n",dir);
 
@@ -199,7 +184,9 @@ int ProcessChangeDir( char *dirname ) {
 	fflush(stdout);
 	char message[SIZE];
 	assembleMessage("TCWD",dirname,message);
-	send(sockfd,message,strlen(message)+1,0);
+	if(send(sockfd,message,strlen(message)+1,0)){
+		perror("could not send TCWD cmd: ");
+	}
 	if(recvAck(sockfd)<0){
 		printf("that file doesn't exist");
 		return -99;
@@ -219,7 +206,9 @@ int ProcessChangeDir( char *dirname ) {
  *
  */
 void EmergencyShutdown() {
-	send(sockfd,EXIT_SESSION,13,0);
+	if(send(sockfd,EXIT_SESSION,13,0)<0){
+		perror("couldn't send mergency shut down message");
+	}
 	close(sockfd);
 }
 
@@ -228,6 +217,7 @@ int sendTPUTMessage(int sockfd, char* filename){
 	unsigned long int size =0;
 	FILE* fd =getFile(filename);
 	if(fd == NULL){
+		perror("couldn't open file");
 		return -99;
 	}
 	size = getfilesize(fd);
@@ -260,12 +250,14 @@ int sendTGETMessage(int sockfd,char* filename){
 	return sendcommand;
 }
 
-int create_connection(){
+int create_connection(uint32_t ip){
 	struct sockaddr_in server_addr, new_addr;
-	char *ip="0.0.0.0";
 	int port =DEFAULT_PORT;
 	int connecting;
-	
+    struct in_addr ip_addr;
+    ip_addr.s_addr = ip;
+    printf("The IP address is %s\n", inet_ntoa(ip_addr));
+
 	int sockfd;
 	FILE *fd;
 
@@ -280,7 +272,7 @@ int create_connection(){
 
 	server_addr.sin_family=AF_INET;
 	server_addr.sin_port=port;
-	server_addr.sin_addr.s_addr=inet_addr(ip);
+	server_addr.sin_addr.s_addr=ip_addr.s_addr;
 	connecting = connect(sockfd,(struct sockaddr*)&server_addr, sizeof(server_addr));
 
 	if(connecting<0){

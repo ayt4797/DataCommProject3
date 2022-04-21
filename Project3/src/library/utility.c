@@ -22,7 +22,7 @@ unsigned long int seperateSizeFromOption(char* option){
 
 FILE* GetFileFromFilename(char* buffer, char* readWrite){
 	char filename[SIZE];
-	printf("opening file %s\n",filename);
+	strcpy(filename,buffer);
 	FILE* fd = fopen(filename,readWrite);
 	if(fd<0){
 		perror("could not open file");
@@ -74,7 +74,10 @@ short recvAck(int sockfd){
 	}
 
 	int ack=0;
-	sscanf(buffer,"%d",&ack);
+	if(sscanf(buffer,"%d",&ack)==EOF){
+		perror("error on finding the ACK VALUE");
+	}
+	
 	printf("ACK VALUE: %s\n",buffer);
 	printf("ACK VALUE: %d\n",ack);
 
@@ -92,8 +95,10 @@ int send_file(char* file, int sockfd,unsigned long size){
 	int f;
 	short sf = sendfile(sockfd,f=open(file,'r',O_CREAT),NULL,size);
 	close(f);
-	if(sf<0)
+	if(sf<0){
+		perror("error on sending the file: ");
 		return -99;
+		}
 	return sf;
 }
 int write_file_here(int sockfd,FILE *fd,unsigned long expectedSize){

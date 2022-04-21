@@ -1,0 +1,23 @@
+ELFèÀóúHƒìH‹áŸóúòÿ%-›ÀyH=Y…ðûÿÿH‰ÇèS÷ÿÿHPHµðûÿÿ‹…Üûÿÿ¹‹EØ¶ƒøoùÿÿƒøO„ÚH‹EÈ‹@HH‹UÈ‰J‰ÂH‹EÈHÐHƒÀH‰EØH‹EØ¶HÐHƒÀH‰EØH‹EØ¶úH‹EÈ‹@HH‹UÈ‰J‰ÂH‹EÈHÐHƒÀH‰EØH‹EØ¶‹UÈ‰J‰ÂH‹EÈHÐHƒÀH‰EØH‹EØ¶úH‹EÈ‹@HH‹UÈ‰J‰ÂH‹EÈHÐHƒÀH‰EØH‹EØ¶ÿÿëfH‹…Øûÿÿ‹wSH‹Eð‹‹UèH‹MðH‰ÎH‰ÇèAHÁøH‰EøHƒ}øÇèú¿ÿÿÉÃóúUH‰åHƒìH‰}øH‹EøH‰ÇèÄ‰uðH‰UèH‹UèH‹MðH‹EøH‰ÎH‰ÇèÃóúUH‰åHƒì H‰}èH‹EèH5*Põ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿ±ÿÿõ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿv¬ÿÿõ­ÿÿv¬ÿÿv¬ÿÿõ­ÿÿv¬ÿÿõ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿx°ÿÿõ­ÿÿõ­ÿÿÄ°ÿÿõ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿ±ÿÿõ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿõ­ÿÿˆ¯ÿÿn«ÿÿn«ÿÿX°ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿ¤°ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿˆ¯ÿÿn«ÿÿn«ÿÿX°ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿn«ÿÿ¤°ÿÿ<²ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ¬²ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ“«ÿÿø²ÿÿ“«ÿÿ“«ÿÿ“«ÿÿD³ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ<²ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ¬²ÿÿ“«ÿÿ“«ÿÿ“«ÿÿ“«ÿÿø²ÿÿ“«ÿÿ“«ÿÿ“«ÿÿD³ÿÿp³ÿÿ]®ÿÿ]®ÿÿ]®ÿÿà³ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ,´ÿÿ]®ÿÿ]®ÿÿ]®ÿÿx´ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ]®ÿÿp³ÿÿ]®ÿÿ]®ÿÿ]®ÿÿà³ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ]®ÿÿ,´ÿÿ]®ÿÿ]®ÿÿ]®ÿÿx´ÿÿ
+  EXIT
+
+  When entered at the command line, this command should cause the the applpication to
+  to disconnect from the server, if already connected, or exit the application if the
+  client is not connected to the server.
+will default the data format as a BINARY transfer to ensure data transfers
+  regardless of the original file's format.
+O SECOND TOKEN ****
+
+TigerFTP Interface Help / Usage: 
+
+  Choose from the following help commands.
+
+	TCONNECT
+	TGET
+	TPUT
+	TLIST
+	TCWD
+”5+iŽß<ã]¿I)¯+­O PpÜ4UŒ#Ù$p<-^Wí,â&ÎÄ‰.s$’±%Sä)-Sj‰$ lªflQ€Fw@–BI2<d?:;9nI2<d;9I?{.x-gnu/bitskw	)=J
+žv^
+žÖ<Œ~ Ÿ+º»(	)=J /gXŸ+º»R•<Á<Ø"î~X»<\ 	)=J‘è~XX	)=JÈØ~.­X	)=JBÓ~.· 	)=JÈê~X›X	)=J"ê~X›X	)=J"ê~X›X	)=J"ä~X¡X	)=J"ä~X¡X	)=J"ä~X¡X	)=J"ä~X¡X	)=J"ä~X¡X	)=J"ä~X¡X	)=J"ä~X¡X	)=J"Þ~X§X	)=J"Þ~X§X	)=J"Þ~X§X	)=J"Þ~X§X	)=J"ä~X<<‘<n 	)=J6ê~XšX	)=JÏû~X‰Xw	)=J5ö~XŽX	)=JÃ	)=JÈÒ|.³X	)=JBÍ|.½ 	)=JÈÍ|XÚ<«x Ÿ+º»ÔæX	)=J"¿~XÆX	)=JÃfKÙ<	æYJŸJ‚uhº` å»	årocessChangeDirdiv_tcESaIcEEaSESt16initializer_listIcEcEEEE4baseEvhar_traitsIcESaIcEEEEdeEvitsIcESaIcEE13find_first_ofEcmorEvt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEpLEleEPcPKcm-fstack-clash-protection -fcf-protectioncbsrtowcswcscpysIcESaIcEE5rfindEPKcmm5char_traitsIcE7compareEPKcS2_msncmpEcsic_stringIcSt11char_traitsIcESaIcEEEEmmEi99_fwscanfcmaIcEE4findEPKcmic_stringIcSt11char_traitsIcESaIcEE17find_first_not_ofEPKcmmrstsISaIP7Token_sEE7destroyIS1_EEvRS2_PT_PP7Token_sEmiElEE18_M_fill_initializeEmRKS1_b0EE_sSt6vectorIS2_SaIS2_EEEmiElS2_OS4_EmPKcst&>_ssCommandvn_sSaIS1_EE2atEmIP7Token_sSaIS1_EEC4EOS3_RKS2_St17integral_constantIbLb1EEDestroyIPP7Token_sS1_EvT_S3_RSaIT0_EÓ
+…(_I_authStaten_sSaIS1_EE3endEvatorIPS1_S3_EEDpOT_Lb1EPP7Token_sS2_ET1_T0_S4_S3_P7Token_sSaIS1_EE15_M_erase_at_endEPS1_cept_aIPP7Token_sS2_SaIS1_EET0_T_S5_S4_RT1_7Token_sSaIS1_EE12_Vector_implC2Ev
