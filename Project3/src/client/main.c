@@ -263,7 +263,7 @@ int sendTGETMessage(int sockfd,char* filename){
 int create_connection(){
 	struct sockaddr_in server_addr, new_addr;
 	char *ip="0.0.0.0";
-	int port =8884;
+	int port =DEFAULT_PORT;
 	int connecting;
 	
 	int sockfd;

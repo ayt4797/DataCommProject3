@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include "../include/utility.h"
 #include <dirent.h>
-
+#define MAXCLIENTS 200
 
 struct sockaddr_in server_addr, new_addr;
 
@@ -13,10 +13,19 @@ struct sockaddr_in server_addr, new_addr;
 int handleCommands(char* buffer,int sock);
 void sendfilesize(FILE* fd,int sock);
 void exit_session(int sock);
-int main(){
-
+int main(int argc, char *argv[]) {
+	
 	char *ip="0.0.0.0";
-	int port =8884;
+	int port =DEFAULT_PORT;
+	if(argc <= 3){
+		printf("I need an ip addr and a port, defaulting to port %d on localhost",DEFAULT_PORT);
+		fflush(stdout);
+	}
+	else{
+		ip = argv[1];
+		port = atoi(argv[2]);
+	}
+
 	int binding;
 	int listening;
     char *ret;
@@ -43,7 +52,7 @@ int main(){
 		return -99;
 	}
 	printf("past bind");
-
+	
 	listening = listen(sockfd,10);
 
 	if(listening==0){
@@ -55,13 +64,17 @@ int main(){
 	}
 
 	addr_size = sizeof(new_addr);
-
-	new_sock = accept(sockfd, (struct sockaddr*)&new_addr, &addr_size);
-	printf("past socket creation");
-	fflush(stdout);
-	// send(new_sock,"Hello")
-	// close(sockfd)
-	int returnstatus=0;
+	int listeningOnAcceptId;
+	while(1){
+		new_sock = accept(sockfd, (struct sockaddr*)&new_addr, &addr_size);
+		listeningOnAcceptId=fork();
+		printf("acceptanace!");
+		fflush(stdout);
+		if(!listeningOnAcceptId){ //!0=1
+			break;
+		}
+	
+	}
 	while(1){
 		recv(new_sock,buffer,SIZE,0);
 		if(handleCommands(buffer,new_sock)<0){
@@ -122,6 +135,7 @@ int handleCommands(char* buffer,int sock){
 	}
 	ret =strstr(buffer,"TLIST");
 	if(ret){
+		printf("TLIST COMMAND CALLED");
 		char directory[MAX_NUM_BYTES_FROM_CWD];
 		char* message;
 		if (getcwd(directory, sizeof(directory)) != NULL) {
@@ -136,8 +150,9 @@ int handleCommands(char* buffer,int sock){
 			{
 				while ((dir = readdir(d)) != NULL)
 				{
-					strcat(message,dir->d_name);
 					message = realloc(message,strlen(message)+strlen(dir->d_name)+2);
+
+					strcat(message,dir->d_name);
 					strcat(message,"\n"); //right here
 
 					printf("%s\n", dir->d_name);
