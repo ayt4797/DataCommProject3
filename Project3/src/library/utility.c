@@ -9,17 +9,19 @@ void getOptionFromBuffer(char* buffer, char* filenameBuffer){
 
 unsigned long int seperateSizeFromOption(char* option){
 	unsigned long int size;
-	option += SIZEOFCOMMAND; //there's no reason to do the check for whitespace like above b/c it should already be uniform
-	printf("option + 5: %s",option);
-	sscanf(option, "%lu", &size);
+	char message[SIZE];
+	sscanf(option, "%s %lu",message, &size);
+	printf("message :%s\n",message);
+	strcpy(option,message);
+	printf("option :%s\n",option);
 	printf("size : %lu \n",size);
 	fflush(stdin);
+	
 	return size;
 }
 
-FILE* GetFileFromBuffer(char* buffer, char* readWrite){
+FILE* GetFileFromFilename(char* buffer, char* readWrite){
 	char filename[SIZE];
-	getOptionFromBuffer(buffer,filename);
 	printf("opening file %s\n",filename);
 	FILE* fd = fopen(filename,readWrite);
 	if(fd<0){
@@ -29,6 +31,7 @@ FILE* GetFileFromBuffer(char* buffer, char* readWrite){
 	return fd;
 }
 
+//returns a file descriptor for a file, returns NULL if the file doesn't exist
 FILE * getFile(char* filename){
 	FILE *file;
     
@@ -52,7 +55,6 @@ unsigned long int getfilesize(FILE *fd){
     return sz;
 }
 
-#define SIZEOFACK 4
 void send_completion_ack(int sock,char* isSuccess){
 	printf("\nack value sending: %s\n",isSuccess);
 	int sendfile= send(sock,isSuccess,SIZEOFACK,0);
@@ -85,22 +87,14 @@ short recvAck(int sockfd){
 	}
 }
 
-void send_file(FILE *fd, int sockfd){
-	char data[SIZE]={0};
-	int sendfile=0;
-	printf("HERE@");
-	fflush(stdin);
-	while (fgets(data, SIZE,fd)!=NULL)	{
-		sendfile= send(sockfd,data,sizeof(data),0);
-		if(sendfile==-1){
-			perror("could not send");
-			exit(1);
-		}
-		bzero(data,SIZE);
-		printf("sending data");
-		fflush(stdin);
-	}
-	fclose(fd);
+//a wrapper for the sendfile method
+int send_file(char* file, int sockfd,unsigned long size){
+	int f;
+	short sf = sendfile(sockfd,f=open(file,'r',O_CREAT),NULL,size);
+	close(f);
+	if(sf<0)
+		return -99;
+	return sf;
 }
 int write_file_here(int sockfd,FILE *fd,unsigned long expectedSize){
 	int recieve=0; //can't be unsigned b/c can be negative

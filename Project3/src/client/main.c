@@ -103,9 +103,12 @@ int ProcessPutFile( char *filename ) {
   // Place your File Upload code here
 
 	int status =sendTPUTMessage(sockfd,filename);
-	printf("here!\n\n\n\n");
-	fflush(stdin);
-	
+	if(status<0){
+		printf("continuing\n");
+		fflush(stdout);
+		return status;
+	}
+	printf("waiting on ack");
 	short completion_value =recvAck(sockfd);
 	if(completion_value <0){
 		printf("An error occured sending the file");
@@ -133,7 +136,7 @@ int ProcessGetFile( char *filename ) {
 	short completion_value=0;
 	// if(s>0){
 		// if(FD_ISSET(sockfd,&rfds)){
-			completion_value =recvAck(sockfd);
+		completion_value =recvAck(sockfd);
 			// }
 	// }
 	short status=0;
@@ -195,8 +198,8 @@ int ProcessChangeDir( char *dirname ) {
 	printf("Library called the TCWD function: <%s>\n", dirname);
 	fflush(stdout);
 	char message[SIZE];
-	assembleMessage("TWCD",dirname,message);
-	send(sockfd,message,strlen(message),0);
+	assembleMessage("TCWD",dirname,message);
+	send(sockfd,message,strlen(message)+1,0);
 	if(recvAck(sockfd)<0){
 		printf("that file doesn't exist");
 		return -99;
@@ -224,8 +227,12 @@ void EmergencyShutdown() {
 int sendTPUTMessage(int sockfd, char* filename){
 	unsigned long int size =0;
 	FILE* fd =getFile(filename);
+	if(fd == NULL){
+		return -99;
+	}
 	size = getfilesize(fd);
-	printf("file size: %lu", size);
+	fclose(fd);
+	// printf("file size: %lu", size);
 	char message[SIZE];
 	assembleTputMessage("tput",filename,size,message);
 
@@ -234,9 +241,12 @@ int sendTPUTMessage(int sockfd, char* filename){
 		perror("error on sending tput command");
 	}
 	printf("\nSENDING TPUT COMMAND!\n");
-	fflush(stdin);
+	fflush(stdout);
 
-	send_file(fd,sockfd); //there is error checking in the send_file method
+	sendcommand=send_file(filename,sockfd,size); //there is error checking in the send_file method
+	if(sendcommand<0){
+		perror("error on sending tput command");
+	}
 	return sendcommand;
 }
 
@@ -291,6 +301,7 @@ void assembleTputMessage(char* command, char* option, unsigned long size, char* 
 	assembleMessage(command,option,result);
 	char temp[20];
 	sprintf(temp,"%lu",size);
+	strcat(result," ");
 	strcat(result,temp);
 }
 /*****************************************************************************

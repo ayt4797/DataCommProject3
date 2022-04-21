@@ -88,7 +88,7 @@ int handleCommands(char* buffer,int sock){
 		fflush(stdin);
 		getOptionFromBuffer(buffer,option);
 		unsigned long size = seperateSizeFromOption(option);
-		returnstatus=write_file_here(sock,GetFileFromBuffer(buffer,"w+"),size);
+		returnstatus=write_file_here(sock,GetFileFromFilename(option,"w+"),size);
 		if(returnstatus<0){
 			send_completion_ack(sock,"-99");
 			perror("could not write file");
@@ -103,25 +103,22 @@ int handleCommands(char* buffer,int sock){
 	if(ret){
 		printf("\nhandling tget\n");
 		fflush(stdout);
-		FILE* fd =GetFileFromBuffer(buffer, "r");
-		if(fd==NULL){
-			perror("FILE DOES NOT EXIST");
-			fflush(stdout);
-
+		getOptionFromBuffer(buffer,option);
+		FILE* file = getFile(option);//purely for checking if the file exists
+		if(file==NULL){
 			send_completion_ack(sock,"-99");
-			returnstatus= 0;
-			
-		}
-		else{
-			printf("FILE DOES EXIST");
-			fflush(stdin);
-			send_completion_ack(sock,"99");
-			sendfilesize(fd,sock);
-			send_file(fd,sock);
 			returnstatus =0;
+			}
+		else{
+			fclose(file);
+			send_completion_ack(sock, "99");
+			unsigned long size = getfilesize(getFile(option));
+			send(sock,&size,sizeof(unsigned long),0);
+			short sf = send_file(option, sock,size);
+			if(sf<0)
+				send_completion_ack(sock,"-99");
+			bzero(ret,SIZEOFCOMMAND);
 		}
-		bzero(ret,SIZEOFCOMMAND);
-
 	}
 	ret =strstr(buffer,"TLIST");
 	if(ret){
@@ -132,7 +129,7 @@ int handleCommands(char* buffer,int sock){
 			DIR *d;
 			struct dirent *dir;
 			d = opendir(".");
-			message = malloc(strlen(directory));
+			message = malloc(strlen(directory)+1);
 			strcpy(message, directory);
 
 			if (d)
@@ -140,7 +137,8 @@ int handleCommands(char* buffer,int sock){
 				while ((dir = readdir(d)) != NULL)
 				{
 					strcat(message,dir->d_name);
-					strcat(message,"\n\0"); //right here
+					message = realloc(message,strlen(message)+strlen(dir->d_name)+2);
+					strcat(message,"\n"); //right here
 
 					printf("%s\n", dir->d_name);
 					fflush(stdout);
@@ -160,6 +158,7 @@ int handleCommands(char* buffer,int sock){
 	ret =strstr(buffer,"TCWD");
 	if(ret){
 		getOptionFromBuffer(buffer,option);
+		printf("option: %s",option);
 		fflush(stdout);
 		if (chdir(option) == 0) {
 			printf("dir: %s exists\n", option);

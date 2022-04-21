@@ -39,3 +39,12 @@ The client sends a message ("Tchdir")
 The server performs an os.chdr(), sends a message ack that the action has been performed
 
 if there was a failure it sends back negative value, and the client prints an error.
+
+
+Clien side TPUT steps:
+- When the user asks to send a file it looks for the file in the immediate folder
+- it then gets the size of that file
+- it then closes the file
+- Client sends a message to the server tellling it to got to the tput command, and that it well have a size of <size>
+- it then uses the send_file() method, not sendfile() method, 
+- the send_file sends only 1024 bytes at a time
