@@ -3,12 +3,12 @@ Requirements:
 		to run in the build file there is two binaries TigerC & TigerS, 
 		to run TigerC simply type ./TigerC, to run TigerS give it an ipp addr, if you don't give it an ip it will default to 0.0.0.0
 
+	Compilation instructions: to compile TigerC & TigerS simply type make in the project3 directory 
 
 	SRV: uses an IPV4 based socket for inter process communications
 	SRV: the server listens for connections until shutdown
 	SRV: the server always supports a client, until shut down
 	SRV: the server gives 
-	Compilation instructions: to compile TigerC & TigerS simply type make in the project3 directory 
 	SRV: is run on a computer that can do multi proccessing
 	SRV: Can print what is happenning so a user can see what is happenning
 
