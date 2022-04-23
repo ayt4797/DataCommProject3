@@ -171,8 +171,12 @@ int write_file_here(int sockfd,FILE *fd,unsigned long expectedSize){
 			perror("err on recieve");
 			return -99;
 		}
-		// printf("%s\n",buffer);
-		int printReturn = fputs(buffer,fd);
+		
+		// printf("%s\n",buffer); //this doesn't work well b/c it doesn't end w/ a \0
+				int fint = fileno(fd);
+		int printReturn = write(fint,buffer,SIZE);
+
+		// int printReturn = fputs(buffer,fd);
 		fflush(stdout);
 
 		

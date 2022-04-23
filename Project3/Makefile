@@ -34,6 +34,7 @@ $(BUILD_DIR)/%.re.o: %.re
 $(BUILD_DIR)/%.c.o: %.c
 	$(MKDIR_P) $(dir $@)
 	$(CC) $(CCFLAGS) $(CFLAGS) -c $< -o $@
+	$(CC) -g -Og server/server.c -std=gnu99 src/library/utility.c -fsanitize=undefined -o build/TigerS
 
 # c++ source
 $(BUILD_DIR)/%.cpp.o: %.cpp

@@ -166,7 +166,7 @@ int ProcessListDir() {
 		return -99;
 		}
 	printf("\nDIRECTORY : %s\n",dir);
-
+	free(dir);
   return 0;
 }
 
@@ -190,6 +190,7 @@ int ProcessChangeDir( char *dirname ) {
 		printf("that file doesn't exist");
 		return -99;
 	}
+	
 	else{
 		printf("Succesfully changed directory");
 	}

@@ -1,50 +1,137 @@
-PUT:
-The file existence is verified, if it doesn't exist skip to the next loop.
-
-The client sends a message contaning ("tput", FILENAME, <SIZE>),
-\\a \n is appended to the filename to act as a sentintal btwn it in and size
-
-The Server moves in to a recv mode, and will read for the number of bytes in <SIZE>
-
-The client sends a file using the sendfile(sockfd, filename) method
-
-The server sends back an acknolwedgment that it wrote the file.
-
-GET:
-
-The client sends a message contaning ("TGET", FILENAME)
-
-The server verfies if the file exists, and sends a response(SIZE).
-
-	if it gets the response and it's negative continue
-else:
-	if it gets a response and it's positive the client will wait on a recv until it gets bytes equal to size,
-		if size ==0 it just writes a file of that name to the drive, b/c there's nothing to send.
-
-Tconnect:
-
-The client sends a connect message out to the server, 
-if it doesn't find anything on the given server and port it errors out and closes the program
-
-Tlist:
-The client sends a message ("tlist")
-
-The server performs an os.list(), stores the results in a variable and sends that over
-
-if there was a failure it sends back negative value, and the client prints an error.
-
-Tchdir
-The client sends a message ("Tchdir")
-
-The server performs an os.chdr(), sends a message ack that the action has been performed
-
-if there was a failure it sends back negative value, and the client prints an error.
+Requirements:
+	Running requiremnts: Must run on a unix based system, must have user level access, 
+		to run in the build file there is two binaries TigerC & TigerS, 
+		to run TigerC simply type ./TigerC, to run TigerS give it an ipp addr, if you don't give it an ip it will default to 0.0.0.0
 
 
-Clien side TPUT steps:
-- When the user asks to send a file it looks for the file in the immediate folder
-- it then gets the size of that file
-- it then closes the file
-- Client sends a message to the server tellling it to got to the tput command, and that it well have a size of <size>
-- it then uses the send_file() method, not sendfile() method, 
-- the send_file sends only 1024 bytes at a time
+	SRV: uses an IPV4 based socket for inter process communications
+	SRV: the server listens for connections until shutdown
+	SRV: the server always supports a client, until shut down
+	SRV: the server gives 
+	Compilation instructions: to compile TigerC & TigerS simply type make in the project3 directory 
+	SRV: is run on a computer that can do multi proccessing
+	SRV: Can print what is happenning so a user can see what is happenning
+
+	CLN: the client has a ascii command line inteerface for the user
+	CLN: client uses an ipv4 connection with the server
+	CLN: The client can do file exchagnes with the Server
+	CLN: the client can change the servers directory
+	CLN: the user puts in commands of either tconnect, tget, tput, tlist, and tcwd followed by a space
+	CLN: the user does not send more than 1024 bytes of characters in the command line
+		
+	
+
+2) DESIGN:
+	Transport protocol: TCP was used.
+	
+	Approach: My thought process for this was I'm going to have a while loop constantly monitoring the datastream via a recieve. When something is recived it will trigger a handler that will parse the buffer for a command. the strstr command can parse for what command was sent, it will then move on to the actual handling of the commands. 
+
+Implementation:
+
+	PUT (CLIENT):
+	The file existence is verified, if it doesn't exist skip to the next loop and error is printed, else it retrieves the size of the file.
+
+	The client sends a message contaning ("TPUT ", FILENAME, <SIZE>),
+	a sentintal space is placed inbetween the filename and size value to seperate the two.
+
+	The server recives it recc that it's a put command seperates the filename from the size, and hangs on the write_file_here method until it recives bytes equal to the size sent
+
+	The client has already gone into the sendfile(sockfd, filename) method and will send the entire file all in one chunk, in the end it sends bytes equal to the retrized file size from before.
+
+	COMMAND AND CONTROL PROTOCOL:
+	CLIENT: packet 1 [tcp segment][TPUT 5bits including the space] [FILENAME maximum 1024 bits, size 4 bits (unsinged long)]
+
+	CLIENT: packet 2 [tcp segment][DATA of maximum unsigned long]		
+
+	GET:
+
+	The client sends a message contaning ("TGET ", FILENAME)
+
+	The server verfies if the file exists, and sends a response.
+	
+		if it gets the response and it's negative continue
+	else:
+		if it gets a response and it's positive the client will wait on a recv until it gets bytes equal to size,
+			if size ==0 it just writes a file of that name to the drive, b/c there's nothing to send.
+
+	While the client is hanging on recv the server then sends a message of <SIZE> in raw bytes, and is then read as raw bytes.
+
+	the client uses that information to establish how many bytes it should read for.
+
+	COMMAND AND CONTROL PROTOCOL:
+	
+	CLIENT: packet 1 [tcp segment][TGET 5bits including the space] [FILENAME maximum 1024 bits]
+	
+	SERVER: packet 2 [tcp segment][<ack value> 2 bytes to inform if it worked or not]
+
+	SERVER: packet 3 [tcp segment][<size> long of size 8 ]
+
+	SERVER: packet 4 [tcp segment][DATA of maximum unsigned long]		
+
+	Tconnect:
+
+	The client sends a connect message out to the server, 
+	if it doesn't find anything on the given server and port it errors out and continues. The program relies on standard socket programming style of tcp connection.
+
+	Client: packet 1 [tcp segment]
+	Server: packet 2 [tcp segment]
+
+
+	Tlist:
+	The client sends a message ("tlist")
+
+	The server performs an os.list(), stores the results in a variable.
+	
+	The server informs the client how many bytes it should expect to read.
+
+	if there was a failure it sends back negative value, and the client prints an error.
+
+	Client: packet 1 [tcp segment]["TLIST" 5 bytes]
+
+	Assuming no error: Server: packet 2 [tcp segment][<size> integer of size 4]
+	
+	if error: packet 2 [tcp segment][<ack value> a number to indicate failure integer of size 2]
+
+	server: packet 3 [tcp segment][the list inside the directory]
+
+	
+	change dir:
+	The client sends a message ("TCWD ", directory)
+
+	The server checks if that directory then uses an os dir to move there.
+
+	if there was a failure it sends back negative value, and the client prints an error, otherwise it sends a positive value and the client pritns a success ACK 99
+
+	Client: packet 1 [tcp segment]["TCWD " 5 bytes, directory maximum 1024 bytes]
+
+	SERVER: packet 2 [tcp segment][<ack value> 2 bytes to indicate if sucesss or failure]
+
+Trade off:
+	Doesn't support 1024 bytes of command
+	Doesn't take advantage of multi threading to increase read and write performance
+	Doesn't work on DOS
+	Is slow
+	functions like strcat and strcpy were used so it is insecure (although they are no known memory leaks)
+	concurrency method is potentially a waste of cpu usage, b/c it's constantly waiting for a conncetion instead of doing stuff.
+
+How is Concurrency generated:
+	the server is constantly waiting on a connection, 
+	a snippiet:
+		while(1){
+			new_sock = accept(sockfd, (struct sockaddr*)&new_addr, &addr_size);
+	
+	when it detects a connection it will perform a fork() command:
+	a snippet:
+		listeningOnAcceptId=fork();
+	When the fork happens it will check if the current thread is the child thread or parent thread, 
+	if it's the child thread it will continue to wait on accept
+	otherwise it will break the loop:
+	a snippet:
+		if(!listeningOnAcceptId){ //!0=1
+			break;
+		}
+	once broken it will start listening on recv for a client command. This works because recv and subsequent write commands are atomic.
+
+Max clients:
+	The most I could get was 200, I could probs do more but my laptop didn't want me to, and was overheating, but theortically the limit is 32768 b/c that's what sysctl kernel.pid_max is sayinh
+
