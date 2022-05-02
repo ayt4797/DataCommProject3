@@ -1,6 +1,7 @@
 {
 	"files.associations": {
 		"utility.h": "c",
-		"fcntl.h": "c"
+		"fcntl.h": "c",
+		"processing.h": "c"
 	}
 }

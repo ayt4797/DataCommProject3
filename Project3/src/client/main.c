@@ -159,7 +159,7 @@ int ProcessListDir() {
 		perror("error on recv");
 		return -99;
 	}
-
+	printf("\n");
 	char* dir = malloc(size);
 	if(recv(sockfd,dir, size,0)<0){ //too many bytes.
 		perror("error on recv");
@@ -183,7 +183,7 @@ int ProcessChangeDir( char *dirname ) {
 	fflush(stdout);
 	char message[SIZE];
 	assembleMessage("TCWD",dirname,message);
-	if(send(sockfd,message,strlen(message)+1,0)){
+	if(send(sockfd,message,strlen(message)+1,0)<0){
 		perror("could not send TCWD cmd: ");
 	}
 	if(recvAck(sockfd)<0){
